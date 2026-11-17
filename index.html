@@ -151,9 +151,6 @@
   <div class="result" id="result">
     <h3>感谢参与 🎉</h3>
     <div class="answers" id="answers"></div>
-    <p class="hint">请点下面的按钮复制答案，然后发回给问卷发起人（微信粘贴即可）。</p>
-    <button class="copy" id="copyBtn">📋 复制答案</button>
-    <button class="copy" id="mailBtn" style="margin-top:10px;background:var(--accent)">📧 邮件发送答案</button>
   </div>
 </div>
 
@@ -178,7 +175,8 @@
   }
   form.addEventListener("change", updateProgress);
 
-  form.addEventListener("submit", e => {
+  const submitBtn = form.querySelector(".submit");
+  form.addEventListener("submit", async e => {
     e.preventDefault();
     if(answered() < 7){
       err.style.display = "block";
@@ -188,25 +186,27 @@
     err.style.display = "none";
     const val = n => form.querySelector(`input[name="${n}"]:checked`).value;
     const q7 = [...form.querySelectorAll('input[name="q7"]:checked')].map(i=>i.value).join("、");
-    const txt = `【问卷结果】\n1.年龄：${val("q1")}\n2.发现方式：${val("q2")}\n3.痛点：${val("q3")}\n4.预算：${val("q4")}\n5.语言：${val("q5")}\n6.收藏：${val("q6")}\n7.信息需求：${q7}`;
-    document.getElementById("answers").textContent = txt;
-    document.getElementById("result").style.display = "block";
-    document.getElementById("result").scrollIntoView({behavior:"smooth"});
-  });
-
-  document.getElementById("copyBtn").addEventListener("click", async () => {
-    const txt = document.getElementById("answers").textContent;
+    const data = {
+      q1: val("q1"), q2: val("q2"), q3: val("q3"), q4: val("q4"),
+      q5: val("q5"), q6: val("q6"), q7: q7,
+      _subject: "问卷结果"
+    };
+    submitBtn.textContent = "提交中...";
+    submitBtn.disabled = true;
     try{
-      await navigator.clipboard.writeText(txt);
-      toast("已复制，去微信粘贴发给问卷发起人");
-    }catch(_){
-      // 兜底：选中文字让用户手动复制
-      const r = document.createRange();
-      r.selectNodeContents(document.getElementById("answers"));
-      const sel = getSelection();
-      sel.removeAllRanges(); sel.addRange(r);
-      toast("请手动复制选中的文字");
+      await fetch("https://formsubmit.co/ajax/408102660@qq.com", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        body: JSON.stringify(data)
+      });
+      document.getElementById("answers").textContent = "已收到你的答案，感谢参与！🎉";
+      document.getElementById("result").style.display = "block";
+      document.getElementById("result").scrollIntoView({behavior:"smooth"});
+    }catch(err){
+      toast("提交失败，请检查网络后重试");
     }
+    submitBtn.textContent = "提交问卷 ✨";
+    submitBtn.disabled = false;
   });
 
   let tt;
@@ -215,11 +215,6 @@
     t.textContent = msg; t.classList.add("show");
     clearTimeout(tt); tt = setTimeout(()=>t.classList.remove("show"), 2200);
   }
-
-  document.getElementById("mailBtn").addEventListener("click", () => {
-    const txt = document.getElementById("answers").textContent;
-    window.location.href = "mailto:408102660@qq.com?subject=" + encodeURIComponent("问卷结果") + "&body=" + encodeURIComponent(txt);
-  });
 </script>
 
 </body>
