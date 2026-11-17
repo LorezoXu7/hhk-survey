@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>香港吃喝玩乐小调查</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+  /* 布局：移动优先的单列问卷；色彩取自香港的士红 + 翡翠绿 */
+  :root{
+    --bg:#f7f4ee; --surface:#ffffff; --fg:#211d18; --muted:#6b6459;
+    --accent:#c0392b; --accent-2:#0e7c6b; --line:#e4ddd0;
+    --star:#e8b931;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#161311; --surface:#211d19; --fg:#ece6da; --muted:#a0988b;
+      --accent:#e0604f; --accent-2:#3fae97; --line:#37322b;
+      color-scheme:dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#161311; --surface:#211d19; --fg:#ece6da; --muted:#a0988b;
+    --accent:#e0604f; --accent-2:#3fae97; --line:#37322b;
+    color-scheme:dark;
+  }
+
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    background:var(--bg); color:var(--fg);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    line-height:1.6;
+    padding-left:max(16px, env(safe-area-inset-left, 0px));
+    padding-right:max(16px, env(safe-area-inset-right, 0px));
+    padding-block:max(24px, env(safe-area-inset-top, 0px)) max(48px, env(safe-area-inset-bottom, 0px));
+  }
+  .wrap{max-width:560px;margin:0 auto}
+
+  header{margin-bottom:20px}
+  header h1{font-size:24px;font-weight:700;letter-spacing:.5px;margin-bottom:6px}
+  header p{font-size:14px;color:var(--muted)}
+  .eyebrow{display:inline-block;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--accent-2);font-weight:700;margin-bottom:6px}
+  .progress{height:5px;background:var(--line);border-radius:3px;margin:16px 0 4px;overflow:hidden}
+  .progress .bar{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-2));width:0;transition:width .25s;border-radius:3px}
+  .progress .count{font-size:12px;color:var(--muted);text-align:right;margin-top:6px}
+
+  .q{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:14px}
+  .q .no{display:inline-block;font-size:11px;font-weight:700;color:#fff;background:var(--accent);padding:2px 10px;border-radius:9px;margin-bottom:10px}
+  .q .no.multi{background:var(--accent-2)}
+  .q .title{font-size:15px;font-weight:600;margin-bottom:12px}
+  .q .req{color:var(--accent)}
+
+  label.opt{display:flex;align-items:center;gap:10px;padding:11px 13px;border:1px solid var(--line);border-radius:11px;margin-bottom:8px;cursor:pointer;font-size:14px;transition:border-color .15s,background .15s}
+  label.opt:last-child{margin-bottom:0}
+  label.opt:hover{border-color:var(--accent)}
+  label.opt input{accent-color:var(--accent);width:18px;height:18px;flex-shrink:0}
+  label.opt:has(input:checked){border-color:var(--accent);background:color-mix(in srgb,var(--accent) 6%,var(--surface))}
+
+  .err{display:none;color:var(--accent);font-size:13px;margin:4px 0 12px}
+  .submit{width:100%;padding:16px;border-radius:13px;border:none;background:linear-gradient(120deg,var(--accent),var(--accent-2));color:#fff;font-size:16px;font-weight:700;cursor:pointer;letter-spacing:1px}
+  .submit:active{transform:scale(.99)}
+
+  .result{display:none;background:var(--surface);border:1px solid var(--accent-2);border-radius:14px;padding:20px;margin-top:16px}
+  .result h3{font-size:17px;color:var(--accent-2);text-align:center;margin-bottom:12px}
+  .result .answers{font-size:14px;background:var(--bg);padding:14px;border-radius:10px;line-height:2;white-space:pre-wrap}
+  .result .hint{font-size:12px;color:var(--muted);margin:12px 0;text-align:center}
+  .result .copy{width:100%;padding:14px;border-radius:12px;border:none;background:var(--fg);color:var(--bg);font-size:15px;font-weight:600;cursor:pointer}
+
+  .toast{position:fixed;left:50%;bottom:max(28px, env(safe-area-inset-bottom, 0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:11px 22px;border-radius:24px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:99}
+  .toast.show{opacity:1}
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">User Research · 用户调研</span>
+    <h1>香港吃喝玩乐习惯小调查</h1>
+    <p>1 分钟填完，感谢帮忙 🙏</p>
+    <div class="progress"><div class="bar" id="bar"></div></div>
+    <div class="count" id="count">已答 0 / 7</div>
+  </header>
+
+  <form id="form" novalidate>
+    <div class="q">
+      <span class="no">第 1 题</span>
+      <div class="title">你的年龄段是？<span class="req">*</span></div>
+      <label class="opt"><input type="radio" name="q1" value="18岁以下">18岁以下</label>
+      <label class="opt"><input type="radio" name="q1" value="18-24岁">18-24岁</label>
+      <label class="opt"><input type="radio" name="q1" value="25-30岁">25-30岁</label>
+      <label class="opt"><input type="radio" name="q1" value="31岁以上">31岁以上</label>
+    </div>
+
+    <div class="q">
+      <span class="no">第 2 题</span>
+      <div class="title">你主要通过什么方式发现香港的好去处？<span class="req">*</span></div>
+      <label class="opt"><input type="radio" name="q2" value="Instagram / 短视频">Instagram Reels / 短视频</label>
+      <label class="opt"><input type="radio" name="q2" value="小红书">小红书</label>
+      <label class="opt"><input type="radio" name="q2" value="朋友推荐">朋友推荐 / 口碑</label>
+      <label class="opt"><input type="radio" name="q2" value="旅游网站">旅游网站 / 攻略</label>
+      <label class="opt"><input type="radio" name="q2" value="其他">其他</label>
+    </div>
+
+    <div class="q">
+      <span class="no">第 3 题</span>
+      <div class="title">找香港吃喝玩乐时，最烦的是什么？<span class="req">*</span></div>
+      <label class="opt"><input type="radio" name="q3" value="太重复太挤">推荐都差不多，太重复太挤</label>
+      <label class="opt"><input type="radio" name="q3" value="信息不全">信息不全（不知道价格、怎么去）</label>
+      <label class="opt"><input type="radio" name="q3" value="太贵">推荐的太贵</label>
+      <label class="opt"><input type="radio" name="q3" value="语言">语言看不懂</label>
+      <label class="opt"><input type="radio" name="q3" value="其他">其他</label>
+    </div>
+
+    <div class="q">
+      <span class="no">第 4 题</span>
+      <div class="title">预算对你选择去处的重要程度？<span class="req">*</span></div>
+      <label class="opt"><input type="radio" name="q4" value="非常重要">非常重要</label>
+      <label class="opt"><input type="radio" name="q4" value="重要">重要</label>
+      <label class="opt"><input type="radio" name="q4" value="一般">一般</label>
+      <label class="opt"><input type="radio" name="q4" value="不太重要">不太重要</label>
+    </div>
+
+    <div class="q">
+      <span class="no">第 5 题</span>
+      <div class="title">你更喜欢什么语言的内容？<span class="req">*</span></div>
+      <label class="opt"><input type="radio" name="q5" value="中文">中文</label>
+      <label class="opt"><input type="radio" name="q5" value="英文">英文</label>
+      <label class="opt"><input type="radio" name="q5" value="中英双语">中英双语</label>
+      <label class="opt"><input type="radio" name="q5" value="无所谓">无所谓</label>
+    </div>
+
+    <div class="q">
+      <span class="no">第 6 题</span>
+      <div class="title">看到一条「真实、不商业化」的推荐，你会收藏吗？<span class="req">*</span></div>
+      <label class="opt"><input type="radio" name="q6" value="会收藏">会收藏</label>
+      <label class="opt"><input type="radio" name="q6" value="不会">不会</label>
+      <label class="opt"><input type="radio" name="q6" value="看情况">看情况</label>
+    </div>
+
+    <div class="q">
+      <span class="no multi">第 7 题 · 多选</span>
+      <div class="title">你希望推荐内容里包含哪些信息？<span class="req">*</span></div>
+      <label class="opt"><input type="checkbox" name="q7" value="价格">价格</label>
+      <label class="opt"><input type="checkbox" name="q7" value="具体位置">具体位置</label>
+      <label class="opt"><input type="checkbox" name="q7" value="交通方式">交通方式</label>
+      <label class="opt"><input type="checkbox" name="q7" value="营业时间">营业时间</label>
+    </div>
+
+    <div class="err" id="err">还有题目没填完，请补上后再提交。</div>
+    <button class="submit" type="submit">提交问卷 ✨</button>
+  </form>
+
+  <div class="result" id="result">
+    <h3>感谢参与 🎉</h3>
+    <div class="answers" id="answers"></div>
+    <p class="hint">请点下面的按钮复制答案，然后发回给问卷发起人（微信粘贴即可）。</p>
+    <button class="copy" id="copyBtn">📋 复制答案</button>
+    <button class="copy" id="mailBtn" style="margin-top:10px;background:var(--accent)">📧 邮件发送答案</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const form = document.getElementById("form");
+  const bar = document.getElementById("bar");
+  const count = document.getElementById("count");
+  const err = document.getElementById("err");
+
+  function answered(){
+    let n = 0;
+    for(let i=1;i<=6;i++){ if(form.querySelector(`input[name="q${i}"]:checked`)) n++; }
+    if(form.querySelector('input[name="q7"]:checked')) n++;
+    return n;
+  }
+  function updateProgress(){
+    const n = answered();
+    bar.style.width = (n/7*100)+"%";
+    count.textContent = "已答 " + n + " / 7";
+  }
+  form.addEventListener("change", updateProgress);
+
+  form.addEventListener("submit", e => {
+    e.preventDefault();
+    if(answered() < 7){
+      err.style.display = "block";
+      err.scrollIntoView({behavior:"smooth", block:"center"});
+      return;
+    }
+    err.style.display = "none";
+    const val = n => form.querySelector(`input[name="${n}"]:checked`).value;
+    const q7 = [...form.querySelectorAll('input[name="q7"]:checked')].map(i=>i.value).join("、");
+    const txt = `【问卷结果】\n1.年龄：${val("q1")}\n2.发现方式：${val("q2")}\n3.痛点：${val("q3")}\n4.预算：${val("q4")}\n5.语言：${val("q5")}\n6.收藏：${val("q6")}\n7.信息需求：${q7}`;
+    document.getElementById("answers").textContent = txt;
+    document.getElementById("result").style.display = "block";
+    document.getElementById("result").scrollIntoView({behavior:"smooth"});
+  });
+
+  document.getElementById("copyBtn").addEventListener("click", async () => {
+    const txt = document.getElementById("answers").textContent;
+    try{
+      await navigator.clipboard.writeText(txt);
+      toast("已复制，去微信粘贴发给问卷发起人");
+    }catch(_){
+      // 兜底：选中文字让用户手动复制
+      const r = document.createRange();
+      r.selectNodeContents(document.getElementById("answers"));
+      const sel = getSelection();
+      sel.removeAllRanges(); sel.addRange(r);
+      toast("请手动复制选中的文字");
+    }
+  });
+
+  let tt;
+  function toast(msg){
+    const t = document.getElementById("toast");
+    t.textContent = msg; t.classList.add("show");
+    clearTimeout(tt); tt = setTimeout(()=>t.classList.remove("show"), 2200);
+  }
+
+  document.getElementById("mailBtn").addEventListener("click", () => {
+    const txt = document.getElementById("answers").textContent;
+    window.location.href = "mailto:408102660@qq.com?subject=" + encodeURIComponent("问卷结果") + "&body=" + encodeURIComponent(txt);
+  });
+</script>
+
+</body>
+</html>
